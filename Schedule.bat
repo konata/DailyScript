@@ -14,16 +14,16 @@ goto:eof
 # coding=utf-8
 import xlrd
 import os
+import sys
 from os.path import isfile
 from dateutil.parser import parse
 from sys import argv
-import sys
 
 LEAVE_DATE_COL = u'出院日期'
 TPL_FILE = os.path.join(os.path.dirname(sys.argv[0]),'python3/template.html')
 
-def get_all_files(_dir):
-	return [os.path.join(_dir,f) for f in os.listdir(_dir) if f.endswith('.xls')]
+def get_all_files(folder):
+	return [os.path.join(folder,f) for f in os.listdir(folder) if f.endswith('.xls')]
 
 def get_sheets_by_name(fname,idx):
 	wb = xlrd.open_workbook(fname)
@@ -33,7 +33,7 @@ def determine_leave_col(sheet):
 	row = sheet.row(0)
 	position = -1 # default col count for leave date
 	for idx, cell in enumerate(row):
-		if cell.value.replace(r" ","").find(LEAVE_DATE_COL) != -1:
+		if cell.value.replace(" ","").find(LEAVE_DATE_COL) != -1:
 			position = idx
 	return position
 
@@ -52,22 +52,6 @@ def move_over_iter(sheet,position):
 		except :
 			pass
 	return record
-
-
-def write_back(_dir,rec):
-	filename = os.path.join(_dir,str(parse("").date()) + ".txt");
-	try:
-		os.rm(filename)
-	except:
-		pass
-
-	f = open(filename,"w",encoding="utf-8")
-	for key,value in rec.items():
-		f.write((u"======  " + key + u"========\n"))
-		f.write(key)
-		for record in value: # each item in record
-			 f.write(" # ".join(map(lambda n: n.value.replace(" ","") , record)) + "\n")
-		f.write("\n")
 
 
 def format_to_html(dirname,list_of_files):
@@ -96,12 +80,12 @@ def format_to_html(dirname,list_of_files):
 
 
 def main():
-	_dir = os.path.dirname(os.getcwd())
-	print(u"使用目录 %s 作为存放Excel的目录\n" % _dir)
-	names_dict = {}
-	files = get_all_files(_dir)
+	cwd = os.path.dirname(os.getcwd())
+	print("使用目录 %s 作为存放Excel的目录\n" % cwd)
+	csv_files = {}
+	files = get_all_files(cwd)
 
-	print (u"共发现%d个excel文件:" %len(files))
+	print ("共发现%d个excel文件:" %len(files))
 	print ("\n".join(files))
 	print ("\n")
 
@@ -111,19 +95,17 @@ def main():
 			idx = determine_leave_col(sheet)
 			if idx != -1:
 				should_visit = move_over_iter(sheet,idx)
-				names_dict[f] = should_visit
+				csv_files[f] = should_visit
 			else:
-				print(u"文件 %s 中未找到 %s 栏" %(f,LEAVE_DATE_COL))
+				print("文件 %s 中未找到 %s 栏" %(f,LEAVE_DATE_COL))
 		except :
 			pass
 
+	filename = os.path.join(cwd,str(parse("").date()) + ".html");
+	format_to_html(cwd,csv_files)
 
-	#write_back(_dir,names_dict)
-	filename = os.path.join(_dir,str(parse("").date()) + ".txt");
-	format_to_html(_dir,names_dict)
-
-	print (u"结果写入文件%s 中\n" %filename)
-	print (u"按照任意键结束")
+	print("结果写入文件%s 中\n" % filename)
+	print("按照任意键结束")
 	input()
 
 
