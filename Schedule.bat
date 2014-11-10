@@ -61,7 +61,7 @@ def move_over_iter(sheet,position,days):
 
 def format_to_html(dirname,list_of_files):
     tpl = '''
-        <h3><center>_title_ _days_</center></h3>
+        <h3><center>_title_</center></h3>
                 <table class="table">
                     _html_
                 </table>
