@@ -52,7 +52,13 @@ def move_over_iter(sheet,position,days):
         try:
             leave_time = parse(cell.value)
             day = (cur - leave_time).days
+            if day < 5:
+                print(days)
+                print(day)
+                print("==========")
+
             if day in days:
+                print("fucku!!!")
                 record.append(sheet.row(pos))
         except :
             pass
@@ -101,7 +107,7 @@ def main():
             days = find_days_for_file(f,custom_date)
             if idx != -1:
                 should_visit = move_over_iter(sheet,idx,days)
-                csv_files[f] = should_visit
+                csv_files[f + "(" + " , ".join(str(day) for day in days) + ")"] = should_visit
             else:
                 print("文件 %s 中未找到 %s 栏" %(f,LEAVE_DATE_COL))
         except xlrd.biffh.XLRDError:
@@ -109,7 +115,6 @@ def main():
 
     filename = os.path.join(CWD,str(parse("").date()) + ".html");
     format_to_html(CWD,csv_files)
-
     print("结果写入文件%s 中\n" % filename)
     print("按照任意键结束")
     input()
