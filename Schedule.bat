@@ -52,13 +52,7 @@ def move_over_iter(sheet,position,days):
         try:
             leave_time = parse(cell.value)
             day = (cur - leave_time).days
-            if day < 5:
-                print(days)
-                print(day)
-                print("==========")
-
             if day in days:
-                print("fucku!!!")
                 record.append(sheet.row(pos))
         except :
             pass
