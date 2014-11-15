@@ -19,6 +19,7 @@ import configparser
 from os.path import isfile
 from dateutil.parser import parse
 from sys import argv
+from datetime import *
 
 LEAVE_DATE_COL = u'出院日期'
 CWD = os.path.join(os.path.dirname(sys.argv[0]))
@@ -42,24 +43,58 @@ def determine_leave_col(sheet):
             position = idx
     return position
 
-def move_over_iter(sheet,position,days):
+def move_over_iter(sheet,position,days,for_day):
     record = []
     rows = sheet.nrows
-    cur = parse("")
     record.append(sheet.row(0))
     for pos in range(1,rows):
         cell = sheet.cell(pos,position)
         try:
             leave_time = parse(cell.value)
-            day = (cur - leave_time).days
+            day = (for_day - leave_time.date()).days
+            echo ("found day : " + str(day) + " days: " + str(days))
             if day in days:
+                echo(sheet.row(pos))
                 record.append(sheet.row(pos))
         except :
+            print(sys.exc_info())
             pass
     return record
 
 
-def format_to_html(dirname,list_of_files):
+def main():
+    echo("使用目录 %s 作为存放Excel的目录\n" % CWD)
+    csv = {}
+    files = get_all_files(CWD)
+
+    echo("共发现%d个excel文件:" %len(files))
+    echo("\n".join(files))
+    echo("\n")
+
+    today = date.today()
+    begin = date(today.year,today.month,1)
+    ini = parse_ini()
+
+    for xls in files:
+        try:
+            sheet = get_sheets_by_name(xls,0)
+            idx = determine_leave_col(sheet)
+            ini_days = find_days_for_file(xls,ini)
+            if idx != -1:
+                for itr_days in (today - timedelta(n) for n in range((today - begin).days)):
+                    should_visit = move_over_iter(sheet,idx,ini_days,itr_days)
+                    csv.setdefault(itr_days,{}).setdefault(xls + "(" + " , ".join(str(day) for day in ini_days) + ")",should_visit)
+            else:
+                echo("文件 %s 中未找到 %s 栏" %(xls,LEAVE_DATE_COL))
+        except xlrd.biffh.XLRDError:
+            pass
+    htmlfy(csv,begin,today)
+    echo("结果写入文件  %s to %s.html 中\n" % (begin,today))
+    echo("按照任意键结束")
+    input()
+
+
+def format_each_day(record_of_day,day):
     tpl = '''
         <h3><center>_title_</center></h3>
                 <table class="table">
@@ -68,50 +103,42 @@ def format_to_html(dirname,list_of_files):
                 <br/> <br/> <br/>
     '''
     html = []
-    for filename,file_content in list_of_files.items():
+    for filename,file_content in record_of_day.items():
         # key filename
         header,content = file_content[0],file_content[1:]
         header_html = '<thead><tr>' + " ".join(map(lambda v : '<th>' + str(v.value).replace(' ','') + '</th>' , header)) + '</tr></thead>'
         content_html = '<tbody>' + " ".join(map(lambda col : '<tr>' + "".join(map(lambda n : '<td>' + str(n.value).replace(' ','') +'</td>', col))  + '</tr>', content)) + '</tbody>'
         html.append(tpl.replace('_html_',header_html + content_html).replace('_title_',filename))
 
+
+    return "<br>".join(html)
+    '''
+    joined_html = tpl.replace('_html_',''.join(html)).replace('_date_',str(day))
+    return joined_html
+    '''
+
+def htmlfy(csv,begin,today):
+    filename = "%s to %s.html" % (begin,today)
+    sep_for_day = '''
+        <br/>
+        <center><h1 style="color:red;font-size:20px">_date_的回访记录</h1></center>
+        _html_
+        <br/>
+        <br/>
+        <br/>
+    '''
+
+    entire = ''
+    for day,record in sorted(csv.items()):
+        htmls = format_each_day(record,day)
+        entire += sep_for_day.replace('_date_',str(day)).replace('_html_',htmls)
+
     # read template
     with open(TPL_FILE,"r") as template:
-        date_str = str(parse('').date())
-        tpl_content = template.read().replace('_html_',''.join(html)).replace('_date_',date_str)
-        with open(os.path.join(os.path.dirname(sys.argv[0]),date_str) + ".html","w+",encoding="utf-8") as log_file:
-            log_file.write(tpl_content)
+        content = template.read().replace('_html_',entire)
+        with open(os.path.join(os.path.dirname(sys.argv[0]),filename),"w+",encoding="utf-8") as dist:
+            dist.write(content)
 
-
-
-def main():
-    print("使用目录 %s 作为存放Excel的目录\n" % CWD)
-    csv_files = {}
-    files = get_all_files(CWD)
-
-    print ("共发现%d个excel文件:" %len(files))
-    print ("\n".join(files))
-    print ("\n")
-
-    custom_date = parse_ini()
-    for f in files:
-        try:
-            sheet = get_sheets_by_name(f,0)
-            idx = determine_leave_col(sheet)
-            days = find_days_for_file(f,custom_date)
-            if idx != -1:
-                should_visit = move_over_iter(sheet,idx,days)
-                csv_files[f + "(" + " , ".join(str(day) for day in days) + ")"] = should_visit
-            else:
-                print("文件 %s 中未找到 %s 栏" %(f,LEAVE_DATE_COL))
-        except xlrd.biffh.XLRDError:
-            pass
-
-    filename = os.path.join(CWD,str(parse("").date()) + ".html");
-    format_to_html(CWD,csv_files)
-    print("结果写入文件%s 中\n" % filename)
-    print("按照任意键结束")
-    input()
 
 
 def find_days_for_file(filename,maps):
@@ -120,6 +147,9 @@ def find_days_for_file(filename,maps):
             return value
     return DEFAULT_INTERVAL
 
+
+def echo(content):
+    print(content)
 
 def parse_ini():
     user_defs = {}
