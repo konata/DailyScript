@@ -52,9 +52,7 @@ def move_over_iter(sheet,position,days,for_day):
         try:
             leave_time = parse(cell.value)
             day = (for_day - leave_time.date()).days
-            echo ("found day : " + str(day) + " days: " + str(days))
             if day in days:
-                echo(sheet.row(pos))
                 record.append(sheet.row(pos))
         except :
             print(sys.exc_info())
@@ -122,7 +120,9 @@ def htmlfy(csv,begin,today):
     sep_for_day = '''
         <br/>
         <center><h1 style="color:red;font-size:20px">_date_的回访记录</h1></center>
+        <div class="daily">
         _html_
+        </div>
         <br/>
         <br/>
         <br/>
