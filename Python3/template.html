@@ -15,50 +15,7 @@
 </div>
 </body>
 	<script type="text/javascript">
-	(function(){	
-			// array patch
-			var extends = function(clazz,meths){
-				for(var key in meths){
-					clazz.prototype[key] = clazz.prototype[key] || meths[key];
-				}
-			};
-
-			mixin(Array,{
-				forEach:function(fn){
-					for(var i = 0; i < this.length; i++){
-						fn(this[i]);
-					}
-				},
-				map:function(fn){	
-					var result = [];
-					for(var i = 0; i < this.length; i++){
-						result[i] = fn(this[i]);
-					}
-					return result;
-				},
-				until:function(pred,fallbacks){
-					var result = [];
-					for(var i = 0; i < this.length; i++){
-						if(pred(this[i])){
-							return this[i];
-						}
-					}
-					return fallbacks(this);
-				}
-			});
-
-			$ = function(){
-
-
-			};
-
-
-
-
-
-
-
-
+	(function(){
 	});
 	</script>
 </html>
