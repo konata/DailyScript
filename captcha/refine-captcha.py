@@ -3,6 +3,7 @@ from __future__ import print_function
 from PIL import Image
 import pyocr
 import operator
+import re
 
 """
 	identify specific image
@@ -50,15 +51,15 @@ def dump(x):
 
 
 if __name__ == '__main__':
-	(image,pix) = read_image('./captchaImage1')
+	(image,pix) = read_image('./6390')
 	(x,y) = image.size
 	# remove noise 3 times
-	count = 2
+	count = 10
 	identified = False
 	while count > 0 and not identified:
 		res = identify_image(image)
 		dump("Identify as : " + res)
-		identified = len(res) == 4 and re.match(ur'^\d{4}$')
+		identified = len(res) == 4 and re.match(ur'^\d{4}$',res)
 		count = count - 1
 		black_dots = find_noise(pix,x,y)
 		map(lambda x: blur_noise(pix,x[0],x[1]),black_dots)
