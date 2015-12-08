@@ -4,6 +4,7 @@ from PIL import Image
 import pyocr
 import operator
 import re
+import sys
 
 """
 	identify specific image
@@ -51,7 +52,9 @@ def dump(x):
 
 
 if __name__ == '__main__':
-	(image,pix) = read_image('./6390')
+	filename = sys.argv[1]
+	(image,pix) = read_image(filename)
+
 	(x,y) = image.size
 	# remove noise 3 times
 	count = 10
@@ -66,16 +69,3 @@ if __name__ == '__main__':
 
 	if not identified:
 		dump("Failed Identify Image ") 
-
-
-
-
-
-
-
-	
-
-
-
-
-
