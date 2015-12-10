@@ -24,6 +24,11 @@ steps:
   4. submit orders
 """
 
+"""
+buy
+{"code":"0","context":"已经被其他用户抢购。"}
+"""
+
 
 """
 LIST:
@@ -120,7 +125,7 @@ class User:
           'code':code
         })
       dump("login_resp",resp.content)
-      if(re.search(u'',resp.content)):
+      if '"1"' in resp.content:
         return (True,resp.content)
       else:
         return (False,resp.content)
@@ -138,6 +143,7 @@ class User:
         "pageNo":1,
         "timestamp":str(int(time.time()*1000))
       },allow_redirects=False)
+      # dump("** list_available",re.sub(ur'^[\n\r]*$','',resp.content))
       dump("** list_available",resp.content)
       if resp.status_code == 302: # login again
         return (False,302)
@@ -145,7 +151,7 @@ class User:
         # <input value="9931" name="sellEpRa" type="radio">
         pattern = ur'value="(\d+)"\s+name="sellEpRa"'
         orders = re.findall(pattern,resp.content)
-        return (True,orders) if len(orders)  > 0 else (False,0)
+        return (True,orders[0]) 
       else: # refresh again
         pass
     except Exception,e:
@@ -161,7 +167,7 @@ class User:
   def submit_order(self,order_id,submit_count=100):
     dump("***submit_order",order_id,submit_count)
     try:
-      resp = self.session.get(SUBMIT_ORDER,data={
+      resp = self.session.post(SUBMIT_ORDER,data={
         'timestamp':str(int(time.time()*1000)),
         'orderId':str(order_id),
         'thpassword':PAY_PASSWORD
@@ -170,13 +176,13 @@ class User:
       code = resp.status_code
       if code == 302:
         dump("submit order need login, lets try again",resp.status_code)
-        return False
-      else: # submit 30 times
-        return self.submit_order(order_id,submit_count-1)
+        return (False,302)
+      else:
+        return ('"1"' in resp.content,200)
     except Exception,e:
       dump("**submit_order  err",e)
       if submit_count < 0:
-        return False
+        return (False,0)
       else:
         return self.submit_order(order_id,submit_count-1)
 
@@ -192,23 +198,29 @@ class User:
 
 
 def main():
-  user  = User()
-  captcha = user.read_captcha();
-  dump("captcha : " + str(captcha))
-  dump("cookie : " + user.cookie())
-  if len(captcha) > 0:
-    logined,login_resp = user.login(captcha)
-    if logined:
-      res,reason = user.list_available()
-      if res:
-        [user.submit_order(order_id) for order_id in reason]
-      else:
-        dump("list failed :" + str(reason))
-    else:
-      dump("login failed: ",login_resp)
-  else:
-    dump("captcha failed:")
+  user = User()
+  logined = False
 
+  while True:
+    if not logined:
+      captcha = user.read_captcha();
+      dump("captcha : " + str(captcha))
+      dump("cookie : " + user.cookie())
+      if len(captcha) > 0:
+        logined,login_resp = user.login(captcha)
+        dump("login_resp:",login_resp,logined)
+      else:
+        logined = False
+
+    if logined:
+      list_res,reason_or_id = user.list_available()
+      if list_res:
+        status,reason = user.submit_order(reason_or_id)
+        dump("buy order ok: " + reason_or_id if status else "buy failed~")
+        logined = (logined and status != 302)
+      else: #  
+        logined = (logined and reason_or_id != 302)
+        dump("list failed :" + str(reason_or_id))
 
 if __name__ == '__main__':
   main()
