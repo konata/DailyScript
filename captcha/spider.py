@@ -59,7 +59,7 @@ def fatal(*args):
   dump(args)
   log_name = time.strftime("%m-%d-%H",time.localtime(time.time()))
   log = open(log_name,"w+")
-  [log.write(arg) for arg in args]
+  [log.write(str(arg)) for arg in args]
   log.close()
 
 class OCR:
