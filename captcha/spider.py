@@ -10,7 +10,6 @@ import traceback
 import re
 import operator
 import tempfile 
-import ipdb
 import time
 
 """
@@ -56,6 +55,12 @@ PROXIES = {'http':'http://127.0.0.1:1090','https':'http://127.0.0.1:1090'}
 def dump(*args):
   [print(arg) for arg in args]
 
+def fatal(*args):
+  dump(args)
+  log_name = time.strftime("%m-%d-%H",time.localtime(time.time()))
+  log = open(log_name,"w+")
+  [log.write(arg) for arg in args]
+  log.close()
 
 class OCR:
   def __init__(self,image):
@@ -204,26 +209,32 @@ def main():
   while True:
     if not logined:
       captcha = user.read_captcha();
-      dump("captcha : " + str(captcha))
-      dump("cookie : " + user.cookie())
+      fatal("captcha : " + str(captcha))
       if len(captcha) > 0:
         logined,login_resp = user.login(captcha)
-        dump("login_resp:",login_resp,logined)
+        fatal("login_resp:",login_resp,logined)
       else:
         logined = False
 
     if logined:
       list_res,reason_or_id = user.list_available()
+      fatal(list_res,reason_or_id)
       if list_res:
         status,reason = user.submit_order(reason_or_id)
-        dump("buy order ok: " + reason_or_id if status else "buy failed~")
+        fatal(status,reason)
+        fatal("buy order ok: " + reason_or_id if status else "buy failed~")
         logined = (logined and status != 302)
       else: #  
         logined = (logined and reason_or_id != 302)
         dump("list failed :" + str(reason_or_id))
 
+
+
+
 if __name__ == '__main__':
   main()
+
+
 
 
 
