@@ -58,8 +58,9 @@ def dump(*args):
 def fatal(*args):
   dump(args)
   log_name = time.strftime("%m-%d-%H",time.localtime(time.time()))
-  log = open(log_name,"w+")
-  [log.write(str(arg)) for arg in args]
+  log = open(log_name,"a+")
+  log.write(str(tuple(args)) + "\n")
+  # [log.write(str(arg) + "\n") for arg in args]
   log.close()
 
 class OCR:
@@ -102,7 +103,7 @@ class User:
   def read_captcha(self,retry_count = 5):
     dump('***read_captcha',retry_count)
     try:
-      self.image_response = self.session.get(CAPTCHA_URL,verify=False,proxies=PROXIES)
+      self.image_response = self.session.get(CAPTCHA_URL,verify=False) #,proxies=PROXIES)
       dump('read_captcha_done')
       image = Image.open(StringIO.StringIO(self.image_response.content))
       filename = re.sub(ur'^.*/','',tempfile.mktemp())
