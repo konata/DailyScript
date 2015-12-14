@@ -46,14 +46,9 @@ LOGIN_URL = "https://www.bmfinn.com/index/validate?timestap="
 ORDER_LIST_URL = "https://www.bmfinn.com//coin/buyData"
 SUBMIT_ORDER = "https://www.bmfinn.com/coin/buy"
 
-"""
 USERNAME = 'dzm888'
 PASSWORD = '888888'
 PAY_PASSWORD = '888888'
-"""
-USERNAME = 'lxy1978'
-PASSWORD = '9151026'
-PAY_PASSWORD = '915918'
 
 PROXIES = {'http':'http://127.0.0.1:1090','https':'http://127.0.0.1:1090'}
 
@@ -231,11 +226,6 @@ def main():
         fatal("submit_captcha",submit_captcha)
         if len(submit_captcha) == 4:
           status,reason = user.submit_order(reason_or_id,submit_captcha)
-
-          if status:
-            fatal("buy ok: ",reason_or_id)
-            return
-            
           fatal(status,reason)
           fatal("buy order ok: " + reason_or_id if status else "buy failed~")
           logined = (logined and status != 302)
