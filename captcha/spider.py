@@ -46,9 +46,14 @@ LOGIN_URL = "https://www.bmfinn.com/index/validate?timestap="
 ORDER_LIST_URL = "https://www.bmfinn.com//coin/buyData"
 SUBMIT_ORDER = "https://www.bmfinn.com/coin/buy"
 
+"""
 USERNAME = 'dzm888'
 PASSWORD = '888888'
 PAY_PASSWORD = '888888'
+"""
+USERNAME = 'lxy1978'
+PASSWORD = '9151026'
+PAY_PASSWORD = '915918'
 
 PROXIES = {'http':'http://127.0.0.1:1090','https':'http://127.0.0.1:1090'}
 
@@ -170,13 +175,14 @@ class User:
       return (False,1)
 
 
-  def submit_order(self,order_id,submit_count=100):
+  def submit_order(self,order_id,code,submit_count=100):
     dump("***submit_order",order_id,submit_count)
     try:
-      resp = self.session.post(SUBMIT_ORDER,data={
-        'timestamp':str(int(time.time()*1000)),
+      resp = self.session.post(SUBMIT_ORDER+"?timestamp=" + str(int(time.time()*1000)),data={
+        # 'timestamp':str(int(time.time()*1000)),
         'orderId':str(order_id),
-        'thpassword':PAY_PASSWORD
+        'thpassword':PAY_PASSWORD,
+        'code':code
       },allow_redirects=False)
       dump("**submit_order",resp.content)
       code = resp.status_code
@@ -190,7 +196,7 @@ class User:
       if submit_count < 0:
         return (False,0)
       else:
-        return self.submit_order(order_id,submit_count-1)
+        return self.submit_order(order_id,code,submit_count-1)
 
 
 
@@ -221,10 +227,18 @@ def main():
       list_res,reason_or_id = user.list_available()
       fatal(list_res,reason_or_id)
       if list_res:
-        status,reason = user.submit_order(reason_or_id)
-        fatal(status,reason)
-        fatal("buy order ok: " + reason_or_id if status else "buy failed~")
-        logined = (logined and status != 302)
+        submit_captcha = user.read_captcha(10)
+        fatal("submit_captcha",submit_captcha)
+        if len(submit_captcha) == 4:
+          status,reason = user.submit_order(reason_or_id,submit_captcha)
+
+          if status:
+            fatal("buy ok: ",reason_or_id)
+            return
+            
+          fatal(status,reason)
+          fatal("buy order ok: " + reason_or_id if status else "buy failed~")
+          logined = (logined and status != 302)
       else: #  
         logined = (logined and reason_or_id != 302)
         dump("list failed :" + str(reason_or_id))
